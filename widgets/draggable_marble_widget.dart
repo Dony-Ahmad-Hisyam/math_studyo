@@ -14,6 +14,66 @@ class DraggableMarbleWidget extends StatelessWidget {
     this.opacity = 1.0,
   });
 
+  /// Get gradient color based on number of connected marbles
+  RadialGradient _getMarbleGradient(Marble marble) {
+    // Get the number of connected marbles in the group
+    int connectionCount = marble.getConnectionGroup().length;
+
+    // Change color based on number of connected marbles
+    switch (connectionCount) {
+      case 1:
+        // Single marble - blue (Bola 1 in reference image)
+        return const RadialGradient(
+          colors: [
+            Color(0xFF8CBAFF), // Light blue
+            Color(0xFF2196F3), // Mid blue
+            Color(0xFF0D47A1), // Dark blue
+          ],
+          stops: [0.0, 0.7, 1.0],
+        );
+      case 2:
+        // Two marbles - purple (Bola 2 in reference image)
+        return const RadialGradient(
+          colors: [
+            Color(0xFFD1A1FF), // Light purple
+            Color(0xFF9C27B0), // Mid purple
+            Color(0xFF6A1B9A), // Dark purple
+          ],
+          stops: [0.0, 0.7, 1.0],
+        );
+      case 3:
+        // Three marbles - pink/red (Bola 3 in reference image)
+        return const RadialGradient(
+          colors: [
+            Color(0xFFFFA1C1), // Light pink
+            Color(0xFFE91E63), // Mid pink/red
+            Color(0xFFB71C1C), // Dark red
+          ],
+          stops: [0.0, 0.7, 1.0],
+        );
+      case 4:
+        // Four marbles - red/orange with yellow center (Bola 4 in reference image)
+        return const RadialGradient(
+          colors: [
+            Color(0xFFFFEB3B), // Yellow center
+            Color(0xFFF44336), // Red
+            Color(0xFFBF360C), // Dark orange/red
+          ],
+          stops: [0.0, 0.5, 1.0],
+        );
+      default:
+        // More marbles or fallback - purple gradient (original)
+        return const RadialGradient(
+          colors: [
+            Color(0xFFB388FF), // Lighter purple
+            Color(0xFF7B1FA2), // Main purple
+            Color(0xFF4A148C), // Darker purple
+          ],
+          stops: [0.0, 0.7, 1.0],
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Opacity(
@@ -23,14 +83,7 @@ class DraggableMarbleWidget extends StatelessWidget {
         height: 32,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              const Color(0xFFB388FF), // Lighter purple
-              const Color(0xFF7B1FA2), // Main purple
-              const Color(0xFF4A148C), // Darker purple
-            ],
-            stops: const [0.0, 0.7, 1.0],
-          ),
+          gradient: _getMarbleGradient(marble),
           border:
               isDragging
                   ? Border.all(color: Colors.white, width: 2)

@@ -113,18 +113,20 @@ class GameController extends GetxController with GetTickerProviderStateMixin {
     // Only handle color bar attraction when dragging
     if (marble.isDragging) {
       for (int i = 0; i < 3; i++) {
-        double barX = 50; // Correct position of color bars
+        double barX =
+            30; // Posisi center kotak (kotak di x=5, width=50, center=30)
         double barY =
-            110 + (i * 175); // Adjusted for proper spacing: 110, 285, 460
+            75 + (i * 128); // Center kotak (15 + 120/2 = 75, spacing 128)
         double distance = sqrt(
           pow(marble.x - barX, 2) + pow(marble.y - barY, 2),
         );
 
-        if (distance < 100) {
-          // Stronger magnetic zone for color bars
+        // Magnetic zone yang lebih ketat - hanya aktif sangat dekat dengan kotak
+        if (distance < 60) {
+          // Dikurangi dari 100
           double dx = barX - marble.x;
           double dy = barY - marble.y;
-          double force = distance < 50 ? 0.3 : 0.15;
+          double force = distance < 30 ? 0.25 : 0.1; // Dikurangi force
           marble.x += dx * force;
           marble.y += dy * force;
         }
@@ -138,19 +140,94 @@ class GameController extends GetxController with GetTickerProviderStateMixin {
       // Connect the marbles
       draggedMarble.connectTo(targetMarble);
 
-      // Visual feedback - make them snap together
-      double dx = targetMarble.x - draggedMarble.x;
-      double dy = targetMarble.y - draggedMarble.y;
-      double distance = sqrt(dx * dx + dy * dy);
-
-      if (distance > 0) {
-        // Position them close together
-        double snapDistance = 25;
-        targetMarble.x = draggedMarble.x + (dx / distance) * snapDistance;
-        targetMarble.y = draggedMarble.y + (dy / distance) * snapDistance;
-      }
+      // Arrange connected marbles in organic merged formation like reference image
+      _arrangeConnectedMarblesOrganically(draggedMarble);
 
       marbles.refresh();
+    }
+  }
+
+  /// Arrange connected marbles in organic merged formation seperti YouTube
+  void _arrangeConnectedMarblesOrganically(Marble centerMarble) {
+    Set<Marble> connectionGroup = centerMarble.getConnectionGroup();
+    List<Marble> marblesList = connectionGroup.toList();
+
+    if (marblesList.length == 1) return; // Single marble, no arrangement needed
+
+    // Find the center position (average of all connected marbles)
+    double centerX =
+        marblesList.map((m) => m.x).reduce((a, b) => a + b) /
+        marblesList.length;
+    double centerY =
+        marblesList.map((m) => m.y).reduce((a, b) => a + b) /
+        marblesList.length;
+
+    // Arrange marbles bersentuhan seperti di video YouTube
+    // Marble size 32px, jarak center-to-center = 32px untuk bersentuhan tepat
+    const double marbleSpacing = 32.0; // Bersentuhan tepat seperti di YouTube
+
+    for (int i = 0; i < marblesList.length; i++) {
+      Marble marble = marblesList[i];
+
+      if (marblesList.length == 2) {
+        // Two marbles: bersebelahan dengan jarak tepat (32px) agar terlihat garis penghubungnya
+        if (i == 0) {
+          marble.x = centerX - marbleSpacing * 0.5; // Jarak 16px dari center
+          marble.y = centerY;
+        } else {
+          marble.x = centerX + marbleSpacing * 0.5; // Jarak 16px dari center
+          marble.y = centerY;
+        }
+      } else if (marblesList.length == 3) {
+        // Three marbles: formasi segitiga dengan satu di atas dan dua di bawah seperti gambar
+        // Jarak yang cukup untuk memastikan garis penghubung terlihat jelas membentuk segitiga
+        double radius =
+            marbleSpacing *
+            0.6; // Lebih besar agar garis penghubung terlihat jelas
+
+        if (i == 0) {
+          // Top marble
+          marble.x = centerX;
+          marble.y = centerY - radius * 0.7;
+        } else if (i == 1) {
+          // Bottom left
+          marble.x = centerX - radius * 0.7;
+          marble.y = centerY + radius * 0.4;
+        } else {
+          // Bottom right
+          marble.x = centerX + radius * 0.7;
+          marble.y = centerY + radius * 0.4;
+        }
+      } else if (marblesList.length == 4) {
+        // Four marbles: formasi plus/bunga dengan satu di tengah dan tiga cabang seperti gambar referensi
+        double radius =
+            marbleSpacing *
+            0.75; // Jarak lebih besar agar garis penghubung terlihat jelas
+
+        if (i == 0) {
+          // Center marble (berwarna kuning di tengah seperti gambar)
+          marble.x = centerX;
+          marble.y = centerY;
+        } else if (i == 1) {
+          // Top petal
+          marble.x = centerX;
+          marble.y = centerY - radius;
+        } else if (i == 2) {
+          // Bottom right petal
+          marble.x = centerX + radius * 0.866; // cos(30°) * radius
+          marble.y = centerY + radius * 0.5; // sin(30°) * radius
+        } else {
+          // Bottom left petal
+          marble.x = centerX - radius * 0.866; // -cos(30°) * radius
+          marble.y = centerY + radius * 0.5; // sin(30°) * radius
+        }
+      } else {
+        // More marbles: formasi melingkar dengan jarak yang rapi
+        double angle = (i * 2 * pi) / marblesList.length;
+        double radius = marbleSpacing * 0.8;
+        marble.x = centerX + cos(angle) * radius;
+        marble.y = centerY + sin(angle) * radius;
+      }
     }
   }
 

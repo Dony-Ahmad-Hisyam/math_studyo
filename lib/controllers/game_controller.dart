@@ -177,17 +177,10 @@ class GameController extends GetxController with GetTickerProviderStateMixin {
       _audioService.playMenempelAudio();
 
       // Connect marbles secara bilateral
-      marble1.connectedMarbles.add(marble2);
-      marble2.connectedMarbles.add(marble1);
+      marble1.connectTo(marble2);
 
-      // Position marble2 next to marble1 dengan jarak yang konsisten
-      marble2.x = marble1.x + 36; // Fixed spacing
-      marble2.y = marble1.y;
-      marble2.isDragging = false;
-      marble2.isFloating = false;
-
-      // Update posisi semua kelereng yang terhubung
-      _updateConnectedMarblesPositions(marble1);
+      // Arrange marbles in formation sesuai YouTube
+      _arrangeConnectedMarblesOrganically(marble1);
 
       // Force refresh UI
       marbles.refresh();
@@ -208,6 +201,77 @@ class GameController extends GetxController with GetTickerProviderStateMixin {
       connectedMarble.isFloating = false;
     }
     marbles.refresh(); // Force refresh to update positions
+  }
+
+  /// Arrange connected marbles in organic merged formation seperti YouTube
+  void _arrangeConnectedMarblesOrganically(Marble centerMarble) {
+    Set<Marble> connectionGroup = centerMarble.getConnectionGroup();
+    List<Marble> marblesList = connectionGroup.toList();
+
+    if (marblesList.length == 1) return; // Single marble, no arrangement needed
+
+    // Find the center position (average of all connected marbles)
+    double centerX =
+        marblesList.map((m) => m.x).reduce((a, b) => a + b) /
+        marblesList.length;
+    double centerY =
+        marblesList.map((m) => m.y).reduce((a, b) => a + b) /
+        marblesList.length;
+
+    // Arrange marbles bersentuhan seperti di video YouTube
+    // Marble size 32px, jarak center-to-center = 32px untuk bersentuhan tepat
+    const double marbleSpacing = 32.0; // Bersentuhan tepat seperti di YouTube
+
+    for (int i = 0; i < marblesList.length; i++) {
+      Marble marble = marblesList[i];
+
+      if (marblesList.length == 2) {
+        // Two marbles: oval horizontal seperti gambar referensi
+        if (i == 0) {
+          marble.x =
+              centerX - marbleSpacing * 0.35; // Lebih mepet untuk bentuk oval
+          marble.y = centerY;
+        } else {
+          marble.x =
+              centerX + marbleSpacing * 0.35; // Lebih mepet untuk bentuk oval
+          marble.y = centerY;
+        }
+      } else if (marblesList.length == 3) {
+        // Three marbles: formasi segitiga equilateral seperti gambar
+        double radius =
+            marbleSpacing * 0.37; // Jarak dari pusat ke titik segitiga
+        double angle = 2 * pi / 3; // 120 derajat
+
+        // Rotasi segitiga agar satu titik di atas seperti gambar
+        double startAngle = -pi / 2; // Mulai dari atas (270 derajat)
+
+        marble.x = centerX + radius * cos(startAngle + i * angle);
+        marble.y = centerY + radius * sin(startAngle + i * angle);
+      } else if (marblesList.length == 4) {
+        // Four marbles: formasi plus/bunga seperti gambar referensi
+        double radius = marbleSpacing * 0.37; // Jarak dari pusat ke titik plus
+
+        if (i == 0) {
+          marble.x = centerX;
+          marble.y = centerY - radius; // Atas
+        } else if (i == 1) {
+          marble.x = centerX + radius;
+          marble.y = centerY; // Kanan
+        } else if (i == 2) {
+          marble.x = centerX;
+          marble.y = centerY + radius; // Bawah
+        } else {
+          marble.x = centerX - radius;
+          marble.y = centerY; // Kiri
+        }
+      } else {
+        // More marbles: formasi melingkar dengan jarak yang rapi
+        double angle = (i * 2 * pi) / marblesList.length;
+        double radius = marbleSpacing * 0.8;
+        marble.x = centerX + cos(angle) * radius;
+        marble.y = centerY + sin(angle) * radius;
+      }
+    }
   }
 
   // =======================================================================
